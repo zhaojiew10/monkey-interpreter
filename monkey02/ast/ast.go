@@ -8,7 +8,7 @@ import (
 
 // The base Node interface
 type Node interface {
-	TokenLiteral() string
+	TokenLiteral() string // 输出token.Literal
 	String() string
 }
 

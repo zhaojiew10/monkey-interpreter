@@ -56,7 +56,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
-	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression) // 前缀表达式解析，<前缀运算符><表达式>
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
@@ -96,6 +96,7 @@ func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// 如果类型匹配，则消费当前token（即移动到下一个token）
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
@@ -205,15 +206,16 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
+	// 这里如果curToken和nextToken是相同的，则必然会跳出循环，nextToken被解析为前缀表达式的符号
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
 		}
 
-		p.nextToken()
+		p.nextToken() // 以x + x为例，执行完后currentToken为+
 
-		leftExp = infix(leftExp)
+		leftExp = infix(leftExp) // 以x + x为例，leftExp为x，跳转到p.parseInfixExpression
 	}
 
 	return leftExp
@@ -254,14 +256,17 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
+// 在token.MINUS和token.BANG时调用
 func (p *Parser) parsePrefixExpression() ast.Expression {
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
 	}
 
+	// 需要使用多个token，因此前移，并再次调用parseExpression
 	p.nextToken()
 
+	// 以PREFIX优先级6为参数传入，构造Right表达式并填充Right字段
 	expression.Right = p.parseExpression(PREFIX)
 
 	return expression
@@ -269,14 +274,14 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	expression := &ast.InfixExpression{
-		Token:    p.curToken,
+		Token:    p.curToken, // 以x + y为例，此时currentToken为+
 		Operator: p.curToken.Literal,
-		Left:     left,
+		Left:     left, // 为x
 	}
 
 	precedence := p.curPrecedence()
-	p.nextToken()
-	expression.Right = p.parseExpression(precedence)
+	p.nextToken()                                    //  以x + y为例，此时currentToken为y
+	expression.Right = p.parseExpression(precedence) // 对right进行解析并赋值Right
 
 	return expression
 }

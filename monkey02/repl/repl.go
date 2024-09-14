@@ -21,6 +21,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		line := scanner.Text()
+		// line := "let a = 1"
 		l := lexer.New(line)
 		p := parser.New(l)
 

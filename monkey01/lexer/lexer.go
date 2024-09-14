@@ -15,6 +15,7 @@ func New(input string) *Lexer {
 	return l
 }
 
+// 读取一个字符并生成token
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -80,7 +81,7 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	}
 
-	l.readChar()
+	l.readChar() // 读取下一个字符
 	return tok
 }
 
